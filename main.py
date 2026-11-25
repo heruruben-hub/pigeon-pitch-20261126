@@ -70,24 +70,36 @@ def _validate(text: str) -> None:
     )
 
 
-def main() -> None:
-    # Gate checks, mirroring the sealed scorer.
-    _validate(ENTRY)
+def _write_and_verify(text: str) -> int:
+    """Write text to /output/entry.txt and verify the round trip.
 
-    encoded = ENTRY.encode("utf-8")
+    Writes the UTF-8 bytes with no trailing newline, reads the file
+    back, and re-runs the gate on what was read, so the file on disk
+    is exactly the validated line. Returns the byte count written.
+    """
+    encoded = text.encode("utf-8")
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "wb") as f:
         f.write(encoded)
 
-    # Round-trip verification: read it back and confirm the gate again.
     with open(OUTPUT_PATH, "rb") as f:
         raw = f.read()
-    text = raw.decode("utf-8")
-    assert text == ENTRY, f"round-trip mismatch: {text!r} != {ENTRY!r}"
-    _validate(text)
+    round_tripped = raw.decode("utf-8")
+    assert round_tripped == text, (
+        f"round-trip mismatch: {round_tripped!r} != {text!r}"
+    )
+    _validate(round_tripped)
+    return len(encoded)
+
+
+def main() -> None:
+    # Gate checks, mirroring the sealed scorer.
+    _validate(ENTRY)
+
+    byte_count = _write_and_verify(ENTRY)
 
     print(
-        f"Wrote {len(text)} characters ({len(encoded)} bytes) to {OUTPUT_PATH}"
+        f"Wrote {len(ENTRY)} characters ({byte_count} bytes) to {OUTPUT_PATH}"
     )
 
 
